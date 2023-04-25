@@ -1,13 +1,15 @@
-import ReactFlow, { Controls, addEdge, useNodesState, NodeAddChange, Background, applyNodeChanges, useNodes, useEdges, Edge, useEdgesState, useOnSelectionChange, useStore, useReactFlow, ReactFlowProvider } from 'reactflow';
+import ReactFlow, { Controls, addEdge, useNodesState, NodeAddChange, Background, applyNodeChanges, useNodes, useEdges, Edge, useEdgesState, useOnSelectionChange, useStore, useReactFlow, ReactFlowProvider, Panel } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useCallback, useEffect, useState } from 'react';
 import Unit, { addUnit } from './unit';
-import { LoginNode, openLogin } from './login';
+import LoginNode, { openLogin } from './login';
 import { useSupabaseClient } from '@supabase/auth-helpers-react';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { useUser } from '@/utils/useUser';
 import CanvasComponent from '../canvas/radar';
+import ToolPanel from './tool.panel';
+
 export const nodeTypes = {
     unit: Unit,
     login_node: LoginNode
@@ -17,22 +19,34 @@ const initialNodes: any[] = []
 function Flow() {
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
     const { addNodes } = useReactFlow();
     const onConnect = useCallback((params: any) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
     const supabaseClient = useSupabaseClient()
-    const { user } = useUser()
+    const { user, isLoading } = useUser()
     useEffect(() => {
         async function loadData() {
+            if (isLoading) {
+                setNodes([])
+                return
+            }
             const { data } = await supabaseClient.from('hackcool_users').select('*')
             console.log('data :', data);
+
             setNodes([addUnit({
                 id: 'node-1', type: 'unit', data: {
-                    Props: { type: "Computer", theme: 'outline', size: '60', fill: '#333' }
+                    Props: { type: "Computer", theme: 'outline', size: '60', fill: '#333' },
+                    SubComp: () => (
+                        <div style={{ flexDirection: 'column', borderRadius: 6, backgroundColor: '#222222', position: 'absolute', bottom: -160, width: 120, height: 150, justifyContent: 'center', alignItems: 'center', display: 'flex' }}>
+                            <div style={{ width: '90%', height: '80%', backgroundColor: '#333333', borderRadius: 5 }}></div>
+                            <input type="text" style={{ marginTop: 5, fontSize: 8, width: '90%', height: '10%', backgroundColor: '#333333', borderRadius: 5, textAlign: 'left', }} />
+                        </div>
+                    )
                 },
                 position: {
                     x: 100,
                     y: 100
-                }
+                },
             })])
         }
         // Only run query once user is logged in.
@@ -54,7 +68,7 @@ function Flow() {
             }),
             ]
         );
-    }, [user])
+    }, [user, isLoading])
 
 
     return (
@@ -71,9 +85,13 @@ function Flow() {
                 }}
                 panOnScroll
                 zoomOnPinch
+                nodesDraggable={false}
                 onlyRenderVisibleElements
             >
                 <Background />
+                <Panel position="bottom-center" style={{ bottom: 50 }}>
+                    <ToolPanel />
+                </Panel>
             </ReactFlow>
         </div>
     );

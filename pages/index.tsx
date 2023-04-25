@@ -22,7 +22,7 @@ export default function Home() {
       <main className={styles.main}>
         <div className={styles.description}>
           {
-            user && <button style={{ display: 'flex', width: 50, height: 50 }} onClick={() => supabase.auth.signOut()}>SignOut</button>
+            user && <button style={{ display: 'flex', width: 100, height: 50, justifyContent: 'center', alignItems: 'center', textAlign: 'center' }} onClick={() => supabase.auth.signOut()}>SignOut</button>
           }
           <p>
             Game: Hacker Cool !

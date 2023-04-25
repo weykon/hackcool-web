@@ -13,7 +13,7 @@ export const openLogin = (addNodes: Instance.AddNodes<any>) => {
     ])
 }
 
-export const LoginNode = memo(() => {
+const LoginNode = () => {
     const supabaseClient = useSupabaseClient();
 
     return (
@@ -36,4 +36,6 @@ export const LoginNode = memo(() => {
             onlyThirdPartyProviders
         />
     )
-})
+}
+
+export default memo(LoginNode);

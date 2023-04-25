@@ -7,12 +7,13 @@ const Icon = dynamic(() => import('@icon-park/react/es/all'), { ssr: false });
 
 function Unit({ id, data }: UnitEnter) {
     return (
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
             <Handle type="target" position={Position.Top} />
             <div>
                 <Icon {...data.Props} />
             </div>
             <Handle type="source" position={Position.Bottom} id="a" />
+            {data.SubComp && <data.SubComp />}
         </div>
     );
 }
@@ -23,6 +24,7 @@ export type UnitEnter = {
     id: string
     data: {
         Props: IIconAllProps
+        SubComp?: () => JSX.Element
     }
 }
 
