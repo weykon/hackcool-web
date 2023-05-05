@@ -1,16 +1,12 @@
-import { createClient, REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js';
-import { createContext, useContext, useEffect, useState } from 'react';
+import { useSupabaseClient } from '@supabase/auth-helpers-react';
+import { REALTIME_POSTGRES_CHANGES_LISTEN_EVENT, createClient, RealtimeChannel, REALTIME_LISTEN_TYPES, REALTIME_PRESENCE_LISTEN_EVENTS, REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js';
+import { createContext, Dispatch, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useUser } from './useUser';
+import { nanoid } from 'nanoid';
+import { cloneDeep, throttle } from 'lodash';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    realtime: {
-        params: {
-            eventsPerSecond: 10,
-        },
-    },
-})
-
-const RealTimeContext = createContext<any>(undefined)
-const useRealTime = () => {
+const RealTimeContext = createContext<undefined | RealTimeContextType>(undefined)
+export const useRealTime = () => {
     const context = useContext(RealTimeContext)
     if (context === undefined) {
         throw new Error('useRealTime must be used within a RealTimeProvider')
@@ -21,47 +17,108 @@ const useRealTime = () => {
 export interface Props {
     [propName: string]: any;
 }
+type PosUser = {
+    user_id: string,
+    x: number, y: number
+}
 
+const userId = nanoid();
+const X_THRESHOLD = 25
+const Y_THRESHOLD = 35
 const RealTimeContextProvider = (props: Props) => {
-    const [cursor_poses, setCursorPoses] = useState<any>([])
+    const [cursor_poses, setCursorPoses] = useState<{
+        [k in string]: PosUser
+    }>({})
+    const { user } = useUser()
+    const supabase = useSupabaseClient()
+    supabase.realtime.heartbeatIntervalMs = 1000;
+
+    const [roomId, setRoomId] = useState<string | undefined>(undefined);
+    const [isInitialStateSynced, setIsInitialStateSynced] = useState<boolean>(false)
+    let setMouseEvent = useRef<any>(() => { });
 
     useEffect(() => {
+        const channel = supabase.channel('rooms');
 
-        const channel = supabase.channel('room1');
-
-
-        let timer: NodeJS.Timer | null = null
-        channel.subscribe((status) => {
-            if (status === 'SUBSCRIBED') {
-                timer = setInterval(() => {
-                    channel.send({
-                        type: 'broadcast',
-                        event: 'cursor-pos',
-                        payload: { x: Math.random(), y: Math.random() },
-                    })
-                    // console.log(status)
-                }, 1000)
-            }
-        });
-
-        channel.on('broadcast', { event: 'cursor-pos' }, (payload: any) => {
-            // console.log('payload', payload)
+        channel.on(REALTIME_LISTEN_TYPES.PRESENCE, {
+            event: REALTIME_PRESENCE_LISTEN_EVENTS.SYNC,
+        }, () => {
+            console.log('sync');
+            const state = channel.presenceState();
+            setIsInitialStateSynced(true)
+            console.log(state);
+            setRoomId('room-1');
         })
 
-        return () => clearInterval(timer!)
-    }, [])
+        const posChannel = supabase.channel(`poses:room-1`)
+        posChannel.on(REALTIME_LISTEN_TYPES.BROADCAST,
+            { event: 'POS' },
+            (payload: any) => {
+                const id = payload.payload.user_id
+                setCursorPoses((poses) => {
+                    const exist_user = poses[id];
+                    if (exist_user) {
+                        const x =
+                            (payload?.payload?.x ?? 0) - X_THRESHOLD > window.innerWidth
+                                ? window.innerWidth - X_THRESHOLD
+                                : payload?.payload?.x
+                        const y =
+                            (payload?.payload?.y ?? 0 - Y_THRESHOLD) > window.innerHeight
+                                ? window.innerHeight - Y_THRESHOLD
+                                : payload?.payload?.y
+
+                        poses[id] = { ...exist_user, ...{ x, y } }
+                        poses = cloneDeep(poses)
+                    } else {
+                        poses[id] = {
+                            user_id: id,
+                            x: payload?.payload?.x,
+                            y: payload?.payload?.y
+                        };
+                    }
+                    return poses
+                })
+
+            }
+        )
+        posChannel.subscribe(
+            (status: `${REALTIME_SUBSCRIBE_STATES}`) => {
+                if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED) {
+                    const sendPosBc = throttle(({ x, y }) => {
+                        posChannel
+                            .send({
+                                type: 'broadcast',
+                                event: 'POS',
+                                payload: { user_id: userId, x, y }
+                            })
+                    }, 200);
+                    setMouseEvent.current = (e: MouseEvent) => {
+                        const [x, y] = [e.clientX, e.clientY]
+                        sendPosBc({ x, y })
+                    }
+                }
+            }
+        )
+
+        return () => {
+
+        }
+    }, [isInitialStateSynced])
+
 
     const value = {
-        cursor_poses
+        cursor_poses,
+        setCursorPoses,
+        setMouseEvent
     };
-
 
     return <RealTimeContext.Provider value={value} {...props} />;
 }
 
 type RealTimeContextType = {
-    cursor_poses: any[],
-
+    cursor_poses: any,
+    setCursorPoses: Dispatch<any>,
+    setMouseEvent: any
 }
 
 export default RealTimeContextProvider
