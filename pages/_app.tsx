@@ -5,6 +5,7 @@ import { createBrowserSupabaseClient } from '@supabase/auth-helpers-nextjs'
 import { SessionContextProvider } from '@supabase/auth-helpers-react'
 import { MyUserContextProvider } from '@/utils/useUser'
 import RealTimeContextProvider from '@/utils/realtime'
+import { ReactFlowProvider } from 'reactflow'
 export default function App({ Component, pageProps }: AppProps) {
   const [supabaseClient] = useState(() => createBrowserSupabaseClient())
   return (
@@ -13,9 +14,11 @@ export default function App({ Component, pageProps }: AppProps) {
       initialSession={pageProps.initialSession}
     >
       <MyUserContextProvider>
-        <RealTimeContextProvider>
-          <Component {...pageProps} />
-        </RealTimeContextProvider>
+        <ReactFlowProvider>
+          <RealTimeContextProvider>
+            <Component {...pageProps} />
+          </RealTimeContextProvider>
+        </ReactFlowProvider>
       </MyUserContextProvider>
     </SessionContextProvider>
   )

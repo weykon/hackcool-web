@@ -4,6 +4,7 @@ import { createContext, Dispatch, useCallback, useContext, useEffect, useRef, us
 import { useUser } from './useUser';
 import { nanoid } from 'nanoid';
 import { cloneDeep, throttle } from 'lodash';
+import { useReactFlow, useViewport } from 'reactflow';
 
 const RealTimeContext = createContext<undefined | RealTimeContextType>(undefined)
 export const useRealTime = () => {
@@ -31,12 +32,14 @@ const RealTimeContextProvider = (props: Props) => {
     }>({})
     const { user } = useUser()
     const supabase = useSupabaseClient()
+    const flowInstance = useReactFlow()
     supabase.realtime.heartbeatIntervalMs = 1000;
 
     const [roomId, setRoomId] = useState<string | undefined>(undefined);
     const [isInitialStateSynced, setIsInitialStateSynced] = useState<boolean>(false)
     let setMouseEvent = useRef<any>(() => { });
-
+    let getFlowWrapperRef = useRef<any>(() => { });
+    const viewport = useViewport();
     useEffect(() => {
         const channel = supabase.channel('rooms');
 
@@ -55,19 +58,15 @@ const RealTimeContextProvider = (props: Props) => {
             { event: 'POS' },
             (payload: any) => {
                 const id = payload.payload.user_id
+                const reactFlowBounds = getFlowWrapperRef.current().current.getBoundingClientRect();
                 setCursorPoses((poses) => {
                     const exist_user = poses[id];
                     if (exist_user) {
-                        const x =
-                            (payload?.payload?.x ?? 0) - X_THRESHOLD > window.innerWidth
-                                ? window.innerWidth - X_THRESHOLD
-                                : payload?.payload?.x
-                        const y =
-                            (payload?.payload?.y ?? 0 - Y_THRESHOLD) > window.innerHeight
-                                ? window.innerHeight - Y_THRESHOLD
-                                : payload?.payload?.y
-
-                        poses[id] = { ...exist_user, ...{ x, y } }
+                        const x = payload?.payload?.x
+                        const y = payload?.payload?.y
+                        poses[id] = {
+                            ...exist_user, x, y
+                        }
                         poses = cloneDeep(poses)
                     } else {
                         poses[id] = {
@@ -85,11 +84,26 @@ const RealTimeContextProvider = (props: Props) => {
             (status: `${REALTIME_SUBSCRIBE_STATES}`) => {
                 if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED) {
                     const sendPosBc = throttle(({ x, y }) => {
+                        const reactFlowBounds = getFlowWrapperRef.current().current.getBoundingClientRect();
+                        console.log('send', flowInstance.project({
+                            x: x - reactFlowBounds.left - viewport.x,
+                            y: y - reactFlowBounds.top - viewport.y
+                        }), x, y, reactFlowBounds.left, viewport.x, viewport.zoom);
+                        const flowPos = flowInstance.project({
+                            x: x - reactFlowBounds.left,
+                            y: y - reactFlowBounds.top
+                        });
+
                         posChannel
                             .send({
                                 type: 'broadcast',
                                 event: 'POS',
-                                payload: { user_id: userId, x, y }
+                                payload: {
+                                    user_id: userId, ...{
+                                        x: flowPos.x,
+                                        y: flowPos.y
+                                    }
+                                }
                             })
                     }, 200);
                     setMouseEvent.current = (e: MouseEvent) => {
@@ -103,13 +117,14 @@ const RealTimeContextProvider = (props: Props) => {
         return () => {
 
         }
-    }, [isInitialStateSynced])
+    }, [isInitialStateSynced, viewport])
 
 
     const value = {
         cursor_poses,
         setCursorPoses,
-        setMouseEvent
+        setMouseEvent,
+        getFlowWrapperRef
     };
 
     return <RealTimeContext.Provider value={value} {...props} />;
@@ -118,7 +133,8 @@ const RealTimeContextProvider = (props: Props) => {
 type RealTimeContextType = {
     cursor_poses: any,
     setCursorPoses: Dispatch<any>,
-    setMouseEvent: any
+    setMouseEvent: any,
+    getFlowWrapperRef: any
 }
 
 export default RealTimeContextProvider

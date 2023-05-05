@@ -1,6 +1,6 @@
 import ReactFlow, { Controls, addEdge, useNodesState, NodeAddChange, Background, applyNodeChanges, useNodes, useEdges, Edge, useEdgesState, useOnSelectionChange, useStore, useReactFlow, ReactFlowProvider, Panel, useViewport } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { useCallback, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import Unit, { addUnit } from './unit';
 import LoginNode, { openLogin } from './login';
 import { useSupabaseClient } from '@supabase/auth-helpers-react';
@@ -19,7 +19,24 @@ export const nodeTypes: any = {
     user_cursor: CursorNode,
 };
 const initialEdges: any[] = [];
-const initialNodes: any[] = []
+const initialNodes: any[] = [];
+
+
+const FlowWrapperContext = createContext<undefined>(undefined)
+export function useFlowWrapperContext() {
+    const context = useContext(FlowWrapperContext)
+    if (context === undefined) {
+        throw new Error('useFlowWrapperContext must be used within a RealTimeProvider')
+    }
+    return context
+}
+
+const FlowWrapperProvider = (props: any) => {
+
+}
+
+
+
 function Flow() {
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -74,10 +91,14 @@ function Flow() {
         );
     }, [user, isLoading])
 
-    const { cursor_poses, setCursorPoses, setMouseEvent } = useRealTime()
-    const screenPos = useViewport();
+    const { cursor_poses, setCursorPoses, setMouseEvent, getFlowWrapperRef } = useRealTime();
+    const flowWrapperRef = useRef(null);
+
+    useEffect(() => { getFlowWrapperRef.current = () => flowWrapperRef }, [flowWrapperRef])
     return (
-        <div style={{ height: '100%', position: 'relative' }}>
+        <div style={{ height: '100%', position: 'relative' }}
+            ref={flowWrapperRef}
+        >
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -93,6 +114,7 @@ function Flow() {
                 nodesDraggable={false}
                 onMouseMove={(evt) => {
                     if (user) {
+                        // console.log(evt)
                         setMouseEvent.current(evt)
                     }
                 }}

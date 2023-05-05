@@ -12,10 +12,10 @@ const Gameview = () => {
 
     return (
         <IconProvider value={IconConfig}>
-            <div style={{ width: '100vw', height: '95vh' }}>
-                <ReactFlowProvider>
+            <div style={{ width: '100vw', height: '100vh' }}>
+                
                     <Flow />
-                </ReactFlowProvider>
+                
             </div>
         </IconProvider>
     )
