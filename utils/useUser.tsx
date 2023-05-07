@@ -29,7 +29,6 @@ export const MyUserContextProvider = (props: Props) => {
     supabaseClient: supabase
   } = useSessionContext();
   const user = useSupaUser();
-
   const accessToken = session?.access_token ?? null;
   const [isLoadingData, setIsloadingData] = useState(false);
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
@@ -41,7 +40,6 @@ export const MyUserContextProvider = (props: Props) => {
       Promise.allSettled([getUserDetails()]).then(
         (results) => {
           const userDetailsPromise = results[0];
-          console.log('(results) =>', results)
           if (userDetailsPromise.status === 'fulfilled')
             setUserDetails(userDetailsPromise.value.data as UserDetails);
           setIsloadingData(false);

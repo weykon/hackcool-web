@@ -23,9 +23,6 @@ type PosUser = {
     x: number, y: number
 }
 
-const userId = nanoid();
-const X_THRESHOLD = 25
-const Y_THRESHOLD = 35
 const RealTimeContextProvider = (props: Props) => {
     const [cursor_poses, setCursorPoses] = useState<{
         [k in string]: PosUser
@@ -35,22 +32,62 @@ const RealTimeContextProvider = (props: Props) => {
     const flowInstance = useReactFlow()
     supabase.realtime.heartbeatIntervalMs = 1000;
 
-    const [roomId, setRoomId] = useState<string | undefined>(undefined);
-    const [isInitialStateSynced, setIsInitialStateSynced] = useState<boolean>(false)
     let setMouseEvent = useRef<any>(() => { });
     let getFlowWrapperRef = useRef<any>(() => { });
-    const viewport = useViewport();
+
     useEffect(() => {
-        const channel = supabase.channel('rooms');
+        if (!user) return
+        const channel = supabase.channel('online_users', {
+            config: { presence: { key: user.id } }
+        });
 
         channel.on(REALTIME_LISTEN_TYPES.PRESENCE, {
             event: REALTIME_PRESENCE_LISTEN_EVENTS.SYNC,
         }, () => {
-            console.log('sync');
-            const state = channel.presenceState();
-            setIsInitialStateSynced(true)
-            console.log(state);
-            setRoomId('room-1');
+            const state = channel.presenceState()
+            console.log('state', state)
+        })
+        channel.on(REALTIME_LISTEN_TYPES.PRESENCE, {
+            event: REALTIME_PRESENCE_LISTEN_EVENTS.JOIN
+        }, ({ key, newPresences }) => {
+            console.log('JOIN:', key, newPresences);
+            // 加入添加对应的光标
+            setCursorPoses((poses) => {
+                if (poses[key]) {
+                    return poses
+                } else {
+                    return {
+                        ...poses,
+                        [key]: {
+                            user_id: key,
+                            x: 0,
+                            y: 0
+                        }
+                    }
+                }
+            })
+        });
+        channel.on(REALTIME_LISTEN_TYPES.PRESENCE, {
+            event: REALTIME_PRESENCE_LISTEN_EVENTS.LEAVE
+        }, ({ key, leftPresences }) => {
+            console.log('LEAVE:', key, leftPresences)
+            // 离开删除对应的光标
+            setCursorPoses((poses) => {
+                if (!poses[key]) {
+                    return poses
+                } else {
+                    const newPoses = cloneDeep(poses);
+                    delete newPoses[key];
+                    return newPoses
+                }
+            })
+        });
+
+        channel.subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                const status = await channel.track({ online_at: new Date().toISOString() })
+                console.log(status)
+            }
         })
 
         const posChannel = supabase.channel(`poses:room-1`)
@@ -58,7 +95,6 @@ const RealTimeContextProvider = (props: Props) => {
             { event: 'POS' },
             (payload: any) => {
                 const id = payload.payload.user_id
-                const reactFlowBounds = getFlowWrapperRef.current().current.getBoundingClientRect();
                 setCursorPoses((poses) => {
                     const exist_user = poses[id];
                     if (exist_user) {
@@ -69,11 +105,7 @@ const RealTimeContextProvider = (props: Props) => {
                         }
                         poses = cloneDeep(poses)
                     } else {
-                        poses[id] = {
-                            user_id: id,
-                            x: payload?.payload?.x,
-                            y: payload?.payload?.y
-                        };
+
                     }
                     return poses
                 })
@@ -85,10 +117,6 @@ const RealTimeContextProvider = (props: Props) => {
                 if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED) {
                     const sendPosBc = throttle(({ x, y }) => {
                         const reactFlowBounds = getFlowWrapperRef.current().current.getBoundingClientRect();
-                        console.log('send', flowInstance.project({
-                            x: x - reactFlowBounds.left - viewport.x,
-                            y: y - reactFlowBounds.top - viewport.y
-                        }), x, y, reactFlowBounds.left, viewport.x, viewport.zoom);
                         const flowPos = flowInstance.project({
                             x: x - reactFlowBounds.left,
                             y: y - reactFlowBounds.top
@@ -99,7 +127,7 @@ const RealTimeContextProvider = (props: Props) => {
                                 type: 'broadcast',
                                 event: 'POS',
                                 payload: {
-                                    user_id: userId, ...{
+                                    user_id: user.id, ...{
                                         x: flowPos.x,
                                         y: flowPos.y
                                     }
@@ -117,7 +145,7 @@ const RealTimeContextProvider = (props: Props) => {
         return () => {
 
         }
-    }, [isInitialStateSynced, viewport])
+    }, [user])
 
 
     const value = {

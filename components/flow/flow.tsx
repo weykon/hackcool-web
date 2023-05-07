@@ -56,13 +56,17 @@ function Flow() {
             setNodes([
                 addUnit({
                     id: 'node-1', type: 'unit', data: {
-                        Props: { type: "Computer", theme: 'outline', size: '60', fill: '#333' },
-                        // SubComp: () => (
-                        //     <div style={{ flexDirection: 'column', borderRadius: 6, backgroundColor: '#222222', position: 'absolute', bottom: -160, width: 120, height: 150, justifyContent: 'center', alignItems: 'center', display: 'flex' }}>
-                        //         <div style={{ width: '90%', height: '80%', backgroundColor: '#333333', borderRadius: 5 }}></div>
-                        //         <input type="text" style={{ marginTop: 5, fontSize: 8, width: '90%', height: '10%', backgroundColor: '#333333', borderRadius: 5, textAlign: 'left', }} />
-                        //     </div>
-                        // )
+                        Props: { type: "NewComputer", theme: 'outline', size: '200', fill: '#333' },
+                        SubComp: () => (
+                            <div style={{
+                                flexDirection: 'column', borderRadius: 6, backgroundColor: '#aaaaaa', position: 'absolute', top: 32, width: 135, height: 102, justifyContent: 'center', alignItems: 'center', display: 'flex'
+                            }}>
+                                <div style={{ padding: 2, fontSize: 2, width: '95%', height: '80%', color: '#aaaaaa', backgroundColor: '#333333', borderRadius: 5 }}>
+                                    Hi, I'm GPT-4!
+                                </div>
+                                <input type="text" style={{ marginTop: 2, fontSize: 5, width: '95%', height: '13%', backgroundColor: '#333333', borderRadius: 3, textAlign: 'left', }} />
+                            </div>
+                        )
                     },
                     position: {
                         x: 100,
@@ -70,7 +74,7 @@ function Flow() {
                     },
                 })])
         }
-        // Only run query once user is logged in.
+
         if (user) loadData()
         else setNodes(
             [...nodes,
@@ -121,7 +125,7 @@ function Flow() {
                 onlyRenderVisibleElements
             >
                 <Background />
-                <Panel position="bottom-center" style={{ bottom: 50 }}>
+                <Panel position="bottom-center" style={{ bottom: 10 }}>
                     <ToolPanel />
                 </Panel>
             </ReactFlow>

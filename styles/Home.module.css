@@ -108,6 +108,16 @@
   position: relative;
 }
 
+.avatar {
+  width: 50px;
+  height: 50;
+  border-radius: 50%;
+  display: flex;
+  overflow: hidden;
+  justify-content: center;
+  align-items: center;
+}
+
 /* Enable hover only on non-touch devices */
 @media (hover: hover) and (pointer: fine) {
   .card:hover {
@@ -151,8 +161,6 @@
     margin-bottom: 0.5rem;
   }
 
-  .center {}
-
   .center::before {
     transform: none;
     height: 300px;
@@ -166,18 +174,13 @@
     padding: 1rem;
   }
 
-  .description p,
-  .description div {
+  .description p {
     display: flex;
     justify-content: center;
     position: fixed;
     width: 100%;
-  }
-
-  .description p {
     align-items: center;
     inset: 0 0 auto;
-    padding: 2rem 1rem 1.4rem;
     border-radius: 0;
     border: none;
     border-bottom: 1px solid rgba(var(--callout-border-rgb), 0.25);
@@ -185,10 +188,10 @@
         rgba(var(--background-start-rgb), 1),
         rgba(var(--callout-rgb), 0.5));
     background-clip: padding-box;
-    backdrop-filter: blur(24px);
+    backdrop-filter: blur(3px);
   }
 
-  .description div {
+  /* .description div {
     align-items: flex-end;
     pointer-events: none;
     inset: auto 0 0;
@@ -198,7 +201,12 @@
         transparent 0%,
         rgb(var(--background-end-rgb)) 40%);
     z-index: 1;
+  } */
 
+  .description .avatar {
+    position: fixed;
+    left: 0;
+    bottom: 0;
   }
 }
 
@@ -220,12 +228,6 @@
   }
 }
 
-@keyframes rotate {
-  from {
-    transform: rotate(360deg);
-  }
-
-  to {
-    transform: rotate(0deg);
-  }
+.tool_panel_div { 
+  backdrop-filter: blur(3px);
 }
