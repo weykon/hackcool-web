@@ -12,6 +12,7 @@ import ToolPanel from './tool.panel';
 import Cursors from './cursors';
 import { useRealTime } from '@/utils/realtime';
 import CursorNode from './cursor';
+import FirstNode from './story/first.node';
 
 export const nodeTypes: any = {
     unit: Unit,
@@ -21,7 +22,6 @@ export const nodeTypes: any = {
 const initialEdges: any[] = [];
 const initialNodes: any[] = [];
 
-
 const FlowWrapperContext = createContext<undefined>(undefined)
 export function useFlowWrapperContext() {
     const context = useContext(FlowWrapperContext)
@@ -30,12 +30,6 @@ export function useFlowWrapperContext() {
     }
     return context
 }
-
-const FlowWrapperProvider = (props: any) => {
-
-}
-
-
 
 function Flow() {
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -51,28 +45,10 @@ function Flow() {
                 setNodes([])
                 return
             }
-            // const { data } = await supabaseClient.from('hackcool_users').select('*')
 
             setNodes([
-                addUnit({
-                    id: 'node-1', type: 'unit', data: {
-                        Props: { type: "NewComputer", theme: 'outline', size: '200', fill: '#333' },
-                        SubComp: () => (
-                            <div style={{
-                                flexDirection: 'column', borderRadius: 6, backgroundColor: '#aaaaaa', position: 'absolute', top: 32, width: 135, height: 102, justifyContent: 'center', alignItems: 'center', display: 'flex'
-                            }}>
-                                <div style={{ padding: 2, fontSize: 2, width: '95%', height: '80%', color: '#aaaaaa', backgroundColor: '#333333', borderRadius: 5 }}>
-                                    {"Hi, I\'m GPT-4!"}
-                                </div>
-                                <input type="text" style={{ marginTop: 2, fontSize: 5, width: '95%', height: '13%', backgroundColor: '#333333', borderRadius: 3, textAlign: 'left', }} />
-                            </div>
-                        )
-                    },
-                    position: {
-                        x: 100,
-                        y: 100
-                    },
-                })])
+                FirstNode()
+            ])
         }
 
         if (user) loadData()

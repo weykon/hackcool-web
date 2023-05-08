@@ -104,8 +104,6 @@ const RealTimeContextProvider = (props: Props) => {
                             ...exist_user, x, y
                         }
                         poses = cloneDeep(poses)
-                    } else {
-
                     }
                     return poses
                 })

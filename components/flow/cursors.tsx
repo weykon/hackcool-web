@@ -5,7 +5,6 @@ import { getTransformForBounds, useReactFlow, useViewport } from "reactflow";
 
 function Cursors() {
     const realtime = useRealTime();
-    const flowInstance = useReactFlow();
     const { user } = useUser()
     const { x, y, zoom } = useViewport();
     return (

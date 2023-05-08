@@ -18,7 +18,7 @@ export const UserContext = createContext<UserContextType | undefined>(
   undefined
 );
 
-export interface Props {
+interface Props {
   [propName: string]: any;
 }
 
