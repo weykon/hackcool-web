@@ -13,6 +13,9 @@ import Cursors from './cursors';
 import { useRealTime } from '@/utils/realtime';
 import CursorNode from './cursor';
 import FirstNode from './story/first.node';
+import { useModals, Modals, } from './modal/modals';
+import { FirstModal } from './story/first.modal';
+import { SelectDevice } from './story/select.device';
 
 export const nodeTypes: any = {
     unit: Unit,
@@ -39,6 +42,7 @@ function Flow() {
     const onConnect = useCallback((params: any) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
     const supabaseClient = useSupabaseClient()
     const { user, isLoading } = useUser()
+    const { setModals } = useModals()
     useEffect(() => {
         async function loadData() {
             if (isLoading) {
@@ -46,9 +50,13 @@ function Flow() {
                 return
             }
 
-            setNodes([
-                FirstNode()
-            ])
+            // setNodes([
+            //     FirstNode()
+            // ])
+            // setModals([
+            //     FirstModal()
+            // ])
+            SelectDevice(setNodes,setModals)
         }
 
         if (user) loadData()
@@ -106,6 +114,7 @@ function Flow() {
                 </Panel>
             </ReactFlow>
             <Cursors />
+            <Modals />
         </div>
     );
 }

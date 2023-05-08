@@ -1,45 +1,68 @@
 import React from 'react'
-import { XYPosition } from 'reactflow';
+import { useViewport, XYPosition } from 'reactflow';
 
 type ModalsContextType = {
-    modals: AddModalProps[]
+    modals: AddModalProps[],
     setModals: React.Dispatch<React.SetStateAction<AddModalProps[]>>
 }
-const ModalsContext = React.createContext<ModalsContextType | {}>({})
+const ModalsContext = React.createContext<ModalsContextType | undefined>(undefined)
 
-export const useModals = () => React.useContext(ModalsContext)
+export const useModals = () => {
+    const context = React.useContext(ModalsContext)
+    if (context === undefined) {
+        throw new Error('useModals must be used within a ModalsProvider')
+    }
+    return context
+}
 interface Props {
     [propName: string]: any;
 }
-const ModalsProvider = (props: Props) => {
+
+export const ModalsProvider = (props: Props) => {
     const [modals, setModals] = React.useState<AddModalProps[]>([])
     const value = {
         modals,
         setModals
     }
+    return <ModalsContext.Provider value={value} {...props} />
+}
 
+export const Modals = () => {
+    const { modals } = useModals()
+    const { x, y, zoom } = useViewport();
     return (
         <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, left: 0, pointerEvents: 'none' }}>
-            <ModalsContext.Provider value={value} {...props} >
-                {modals.map(e => {
+            {
+                modals.map(e => {
+                    const _x = (e.pos.x * zoom + x)
+                    const _y = (e.pos.y * zoom + y)
                     return (
-                        <div key={e.id} style={{ position: 'absolute', width: e.w, height: e.h, left: e.pos.x, top: e.pos.y, pointerEvents: 'all' }}>
+                        <div
+                            key={e.id}
+                            className="transition-all duration-75 ease-in-out transition"
+                            style={{
+                                position: 'absolute',
+                                width: e.w * zoom,
+                                height: e.h * zoom,
+                                transform: `translateX(${_x}px) translateY(${_y}px)`,
+                                display: 'flex',
+                                justifyContent: 'flex-start',
+                                alignItems: 'flex-start',
+                            }}>
                             {e.comp}
                         </div>
                     )
-                })}
-            </ModalsContext.Provider>
+                })
+            }
         </div>
     )
 }
 
-export const addModal = (modals: AddModalProps[]) => {
-    return {
-        modals
-    }
+export const addModal = (modal: AddModalProps) => {
+    return modal
 }
 
-type AddModalProps = {
+export type AddModalProps = {
     id: string,
     name: string,
     w: number, h: number,
@@ -47,4 +70,3 @@ type AddModalProps = {
     comp: JSX.Element
 }
 
-export default ModalsProvider

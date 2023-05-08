@@ -32,11 +32,12 @@ const RealTimeContextProvider = (props: Props) => {
     const flowInstance = useReactFlow()
     supabase.realtime.heartbeatIntervalMs = 1000;
 
+
     let setMouseEvent = useRef<any>(() => { });
     let getFlowWrapperRef = useRef<any>(() => { });
 
     useEffect(() => {
-        if (!user) return
+        if (!user) return;
         const channel = supabase.channel('online_users', {
             config: { presence: { key: user.id } }
         });
@@ -85,7 +86,7 @@ const RealTimeContextProvider = (props: Props) => {
 
         channel.subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
-                const status = await channel.track({ online_at: new Date().toISOString() })
+                const status = await channel.track({ online_at: new Date().toISOString(), user_name: user.user_metadata.full_name })
                 console.log(status)
             }
         })
@@ -101,13 +102,13 @@ const RealTimeContextProvider = (props: Props) => {
                         const x = payload?.payload?.x
                         const y = payload?.payload?.y
                         poses[id] = {
-                            ...exist_user, x, y
+                            user_id: exist_user.user_id
+                            , x, y
                         }
                         poses = cloneDeep(poses)
                     }
                     return poses
                 })
-
             }
         )
         posChannel.subscribe(
@@ -119,16 +120,14 @@ const RealTimeContextProvider = (props: Props) => {
                             x: x - reactFlowBounds.left,
                             y: y - reactFlowBounds.top
                         });
-
                         posChannel
                             .send({
                                 type: 'broadcast',
                                 event: 'POS',
                                 payload: {
-                                    user_id: user.id, ...{
-                                        x: flowPos.x,
-                                        y: flowPos.y
-                                    }
+                                    user_id: user.id,
+                                    x: flowPos.x,
+                                    y: flowPos.y
                                 }
                             })
                     }, 200);
@@ -141,7 +140,10 @@ const RealTimeContextProvider = (props: Props) => {
         )
 
         return () => {
-
+            posChannel.unsubscribe()
+            supabase.removeChannel(posChannel)
+            channel.unsubscribe()
+            supabase.removeChannel(channel)
         }
     }, [user])
 
