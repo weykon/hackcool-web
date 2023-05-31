@@ -11,5 +11,5 @@ langchain
 huggingface  
 [realtime](https://github.com/supabase/realtime-js)
 
-i need to build a svg creator by text to svg may some transformer modal in huggingface supportting.
+i need to build a svg creator by text to svg feature that may some transformer modal in huggingface supportting.
 
